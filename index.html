@@ -619,11 +619,10 @@
       if (meta && meta.device && meta.device !== 'Sin datos') {
         const dev = meta.device.toLowerCase();
 
-        const isPhone =
-          /(iphone|ipad|ipod|android|samsung|galaxy|xiaomi|redmi|huawei|motorola|moto|pixel|oneplus|oppo|vivo|realme|nokia|lg|sony)/.test(dev);
+        const isPhone = /(iphone|ipad|ipod|android|samsung|galaxy|xiaomi|redmi|huawei|motorola|moto|pixel|oneplus|oppo|vivo|realme|nokia|lg|sony)/.test(dev);
 
-        if (isPhone) {
-          ia -= 15; 
+        if (isPhone && ia > 30) {
+          ia = 30; 
         }
       }
 
@@ -676,4 +675,3 @@
   </script>
 </body>
 </html>
-
