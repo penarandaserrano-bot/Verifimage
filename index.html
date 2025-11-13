@@ -624,7 +624,7 @@
       }
       const meanL = sumL / nL;
       const varL = Math.max(0, sumL2 / nL - meanL*meanL);
-      const hf = Math.max(0, Math.min(100, Math.round(100 * (1 - Math.exp(-varL / 1500))))));
+      const hf = Math.max(0, Math.min(100, Math.round(100 * (1 - Math.exp(-varL / 1500)))));
 
       const seen = new Set();
       for (let i = 0; i < rgba.length; i += 4) {
