@@ -263,7 +263,7 @@
       document.body.style.overflow='';
     });
 
-    const KEYS={USERS:'verif_users_v2',SESSION:'verif_session_v2',USER_HIST:u=>`verif_hist_${u}_v2`,GLOBAL:'verif_global_results_v9'};
+    const KEYS={USERS:'verif_users_v2',SESSION:'verif_session_v2',USER_HIST:u=>`verif_hist_${u}_v2`,GLOBAL:'verif_global_results_v10'};
     function load(k,f){try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}}
     function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
     function trySave(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
@@ -584,32 +584,50 @@
     }
 
     function isSurrealPhotoAI(rgba, meta) {
-      let total = 0, sumSat = 0, sumVal = 0, dark = 0, bright = 0;
+      let total = 0;
+      let sumSat = 0;
+      let sumVal = 0;
+      let dark = 0;
+      let bright = 0;
+
       for (let i = 0; i < rgba.length; i += 16) {
         const r = rgba[i], g = rgba[i+1], b = rgba[i+2];
         const max = Math.max(r, g, b);
         const min = Math.min(r, g, b);
+
         const v = max / 255;
         const s = max === 0 ? 0 : (max - min) / max;
-        sumSat += s; sumVal += v; total++;
-        if (v < 0.18) dark++;
-        if (v > 0.82) bright++;
+
+        sumSat += s;
+        sumVal += v;
+        total++;
+
+        if (v < 0.22) dark++;
+        if (v > 0.78) bright++;
       }
+
       if (!total) return false;
+
       const meanSat = sumSat / total;
       const meanVal = sumVal / total;
       const darkFrac = dark / total;
       const brightFrac = bright / total;
+
       const noDevice = !meta || meta.device === 'Sin datos';
       const fileType = (meta?.type || '').toLowerCase();
-      const isPhotoLike = fileType.includes('jpg') || fileType.includes('jpeg') || fileType.includes('png') || fileType.includes('webp');
+      const isPhotoLike =
+        fileType.includes('jpg') ||
+        fileType.includes('jpeg') ||
+        fileType.includes('png') ||
+        fileType.includes('webp');
+
       return (
         noDevice &&
         isPhotoLike &&
-        meanSat > 0.55 &&
-        meanVal > 0.35 &&
-        darkFrac > 0.12 &&
-        brightFrac > 0.12
+        meanSat > 0.50 &&
+        meanVal > 0.30 &&
+        darkFrac  > 0.08 &&
+        brightFrac > 0.08
       );
     }
 
@@ -764,9 +782,9 @@
         ia = 0.50*ela + 0.25*(100-natural) + 0.15*(100-entropy) + 0.10*(100-edge) + aux;
       }
 
-      // Si parece una "foto surreal" típica de IA, asegurar IA mínima 70%
-      if (surrealPhotoAI && ia < 70) {
-        ia = 70;
+      
+      if (surrealPhotoAI && ia < 85) {
+        ia = 85;
       }
 
       if (colorfulIllustration && ia < 75) {
