@@ -263,7 +263,7 @@
       document.body.style.overflow='';
     });
 
-    const KEYS={USERS:'verif_users_v2',SESSION:'verif_session_v2',USER_HIST:u=>`verif_hist_${u}_v2`,GLOBAL:'verif_global_results_v7'};
+    const KEYS={USERS:'verif_users_v2',SESSION:'verif_session_v2',USER_HIST:u=>`verif_hist_${u}_v2`,GLOBAL:'verif_global_results_v8'};
     function load(k,f){try{return JSON.parse(localStorage.getItem(k))??f}catch{return f}}
     function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
     function trySave(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
@@ -550,6 +550,39 @@
       return total? flats/total : 0;
     }
 
+    
+    function isColorfulIllustration(rgba, w, h, meta) {
+      let total = 0, sumS = 0, sumV = 0;
+      for (let i = 0; i < rgba.length; i += 16) {
+        const r = rgba[i], g = rgba[i+1], b = rgba[i+2];
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const s = max === 0 ? 0 : (max - min) / max;
+        const v = max / 255;
+        sumS += s;
+        sumV += v;
+        total++;
+      }
+      const meanSat = total ? sumS / total : 0;
+      const meanVal = total ? sumV / total : 0;
+
+      const palette = paletteSizeBinned(rgba, 32);
+      const flat = flatnessRatio3x3(rgba, w, h, 30);
+
+      const fileType = (meta?.type || '').toLowerCase();
+      const isIllustrationType = fileType.includes('png') || fileType.includes('webp');
+      const noDevice = !meta || meta.device === 'Sin datos';
+
+      return (
+        meanSat > 0.6 &&
+        meanVal > 0.4 &&
+        palette < 90 &&
+        flat > 0.25 && flat < 0.8 &&
+        isIllustrationType &&
+        noDevice
+      );
+    }
+
     function edgeDensitySobel(rgba,w,h,T=80){
       const Y=toGray(rgba,w,h); let strong=0,N=0;
       for (let y=1;y<h-1;y+=2){
@@ -585,6 +618,7 @@
 
     async function computeScores(dataURL, meta) {
       const [rgba, w, h] = await readRGBA(dataURL, 1024);
+      const colorfulIllustration = isColorfulIllustration(rgba, w, h, meta);
 
       const { score: ela, map } = await ELA_score(dataURL);
       lastELAData = map;
@@ -699,13 +733,17 @@
         ia = 0.50*ela + 0.25*(100-natural) + 0.15*(100-entropy) + 0.10*(100-edge) + aux;
       }
 
+      if (colorfulIllustration && ia < 75) {
+        ia = 75; 
+      }
+
       if (meta && meta.device && meta.device !== 'Sin datos') {
         const dev = meta.device.toLowerCase();
 
         const isPhone = /(iphone|ipad|ipod|android|samsung|galaxy|xiaomi|redmi|huawei|motorola|moto|pixel|oneplus|oppo|vivo|realme|nokia|lg|sony)/.test(dev);
 
         if (isPhone && ia > 30) {
-          ia = 30; // IA como máximo 30% → Humano mínimo 70%
+          ia = 30; 
         }
       }
 
