@@ -615,6 +615,18 @@
         ia = 0.45*ela + 0.35*(100-natural) + 0.15*blocky + 0.05*edgeInv + aux;
       }
 
+      
+      if (meta && meta.device && meta.device !== 'Sin datos') {
+        const dev = meta.device.toLowerCase();
+
+        const isPhone =
+          /(iphone|ipad|ipod|android|samsung|galaxy|xiaomi|redmi|huawei|motorola|moto|pixel|oneplus|oppo|vivo|realme|nokia|lg|sony)/.test(dev);
+
+        if (isPhone) {
+          ia -= 15; 
+        }
+      }
+
       ia = Math.max(0, Math.min(100, Math.round(ia)));
       const human = 100 - ia;
 
