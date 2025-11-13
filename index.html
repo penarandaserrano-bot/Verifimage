@@ -91,11 +91,11 @@
             src="https://i.ibb.co/tTp5rj1B/Chat-GPT-Image-11-nov-2025-09-19-35-p-m.png" 
             alt="Verifimage Logo"
             style="
-              height: 110px;          /* aumenta tamaño vertical */
-              width: auto;            /* mantiene proporción */
-              border-radius: 16px;    /* esquinas suaves */
-              margin-right: 14px;     /* separa del texto */
-              box-shadow: 0 0 12px rgba(0,255,204,0.25); /* brillo sutil */
+              height: 110px;
+              width: auto;
+              border-radius: 16px;
+              margin-right: 14px;
+              box-shadow: 0 0 12px rgba(0,255,204,0.25);
               transition: transform 0.3s ease, box-shadow 0.3s ease;
             "
             onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 0 16px rgba(0,255,204,0.45)';"
@@ -583,6 +583,36 @@
       );
     }
 
+    function isSurrealPhotoAI(rgba, meta) {
+      let total = 0, sumSat = 0, sumVal = 0, dark = 0, bright = 0;
+      for (let i = 0; i < rgba.length; i += 16) {
+        const r = rgba[i], g = rgba[i+1], b = rgba[i+2];
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const v = max / 255;
+        const s = max === 0 ? 0 : (max - min) / max;
+        sumSat += s; sumVal += v; total++;
+        if (v < 0.18) dark++;
+        if (v > 0.82) bright++;
+      }
+      if (!total) return false;
+      const meanSat = sumSat / total;
+      const meanVal = sumVal / total;
+      const darkFrac = dark / total;
+      const brightFrac = bright / total;
+      const noDevice = !meta || meta.device === 'Sin datos';
+      const fileType = (meta?.type || '').toLowerCase();
+      const isPhotoLike = fileType.includes('jpg') || fileType.includes('jpeg') || fileType.includes('png') || fileType.includes('webp');
+      return (
+        noDevice &&
+        isPhotoLike &&
+        meanSat > 0.55 &&
+        meanVal > 0.35 &&
+        darkFrac > 0.12 &&
+        brightFrac > 0.12
+      );
+    }
+
     function edgeDensitySobel(rgba,w,h,T=80){
       const Y=toGray(rgba,w,h); let strong=0,N=0;
       for (let y=1;y<h-1;y+=2){
@@ -619,6 +649,7 @@
     async function computeScores(dataURL, meta) {
       const [rgba, w, h] = await readRGBA(dataURL, 1024);
       const colorfulIllustration = isColorfulIllustration(rgba, w, h, meta);
+      const surrealPhotoAI = isSurrealPhotoAI(rgba, meta);
 
       const { score: ela, map } = await ELA_score(dataURL);
       lastELAData = map;
@@ -733,8 +764,13 @@
         ia = 0.50*ela + 0.25*(100-natural) + 0.15*(100-entropy) + 0.10*(100-edge) + aux;
       }
 
+      // Si parece una "foto surreal" típica de IA, asegurar IA mínima 70%
+      if (surrealPhotoAI && ia < 70) {
+        ia = 70;
+      }
+
       if (colorfulIllustration && ia < 75) {
-        ia = 75; 
+        ia = 75;
       }
 
       if (meta && meta.device && meta.device !== 'Sin datos') {
